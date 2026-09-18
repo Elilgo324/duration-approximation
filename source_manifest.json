@@ -1,0 +1,13 @@
+{
+  "protocol": "duration_approximation_v6",
+  "original_source_bundle_sha256": "d72aaac24fa2755675dc6b2de7b24031c0656c3a923bb15b15bce7b99ae86b20",
+  "modules_sha256": {
+    "experiment.py": "71c898dd6c90b0eadf5cd93ce6d3b7635a3fb9eabb21fbd8d70bcc7b20e5ac1a",
+    "learning.py": "4a252bb2f88ba5be84743db67a7b42db7087b1c1cde0e5498676227caa224b52",
+    "routing.py": "c64b1e28fc5bfd6ba44e91d681f23919cbe5f6032493bc67eafcd085b4254606",
+    "runtime.py": "70a2f963b67c9c356c7c000b1531d445f3054d0f5d882bd303a0ea0d24c67642",
+    "protocol.json": "d7952e53b3c9e06edf56468c81684fa49622d568228eded070dd564f689f9eca",
+    "requirements.txt": "6af3d5157f38ff24343f023a06cf22e60f09c90469e853979ea1bb9dd741b4e8"
+  },
+  "note": "Core experiment modules are byte-identical to the completed run. Packaging and test import paths are adapted for standalone use."
+}

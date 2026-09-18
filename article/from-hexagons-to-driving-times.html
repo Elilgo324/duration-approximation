@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>From Hexagons to Driving Times — Ori Fogler</title><meta name="description" content="An experiment in driving-duration approximation: H3 landmarks, a conservative route bound, and three ML models across Tel Aviv, Amsterdam, and New York." />
+<link rel="canonical" href="https://orifogler.com/blog/posts/from-hexagons-to-driving-times.html" /><meta property="og:type" content="article" />
+<meta property="og:title" content="From Hexagons to Driving Times" /><meta property="og:description" content="An experiment in driving-duration approximation: H3 landmarks, a conservative route bound, and three ML models across Tel Aviv, Amsterdam, and New York." /><meta property="og:url" content="https://orifogler.com/blog/posts/from-hexagons-to-driving-times.html" />
+<meta property="article:published_time" content="2026-09-18" /><meta property="article:modified_time" content="2026-09-18" />
+<meta name="twitter:card" content="summary" /><link rel="icon" href="https://orifogler.com/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="https://orifogler.com/blog/blog.css" /><link rel="stylesheet" href="https://orifogler.com/blog/duration-approximation.css" />
+<link rel="stylesheet" href="https://orifogler.com/assets/blog-print.css" /><script src="https://orifogler.com/assets/blog-print.js" defer></script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "From Hexagons to Driving Times", "description": "An experiment in driving-duration approximation: H3 landmarks, a conservative route bound, and three ML models across Tel Aviv, Amsterdam, and New York.", "datePublished": "2026-09-18", "dateModified": "2026-09-18", "inLanguage": "en", "mainEntityOfPage": "https://orifogler.com/blog/posts/from-hexagons-to-driving-times.html", "author": {"@type": "Person", "name": "Ori Fogler", "url": "https://orifogler.com/"}}</script>
+</head><body>
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header shell"><a class="wordmark" href="https://orifogler.com/">Ori Fogler</a><nav aria-label="Main navigation"><a href="https://orifogler.com/blog/">Blog</a><a href="https://orifogler.com/resume.html">Resume</a></nav></header>
+<main id="content" class="shell"><article>
+<header class="article-heading"><p class="article-kicker">Routing · Machine learning · An experiment</p><h1>From Hexagons to Driving Times</h1>
+<p class="article-subtitle">How much road-network detail do we need to estimate a drive?</p>
+<p class="byline">Ori Fogler · <time datetime="2026-09-18">September 18, 2026</time> · About 12 minutes</p>
+<div class="print-actions"><button class="print-button" type="button" data-print hidden>Print article</button></div></header>
+<div class="article-layout"><div class="prose">
+<p>A shortest-path query answers a precise question: how long does it take to drive from this pickup to this drop-off? But many planning problems ask that question thousands of times, for pairs that keep changing. It is tempting to do some of the work in advance.</p>
+<p>The difficulty is deciding what to store. A table between every possible pair of coordinates is impossible. A table between a small set of representative locations is manageable, but it loses detail. Can a model recover enough of that detail to produce useful estimates?</p>
+<p>I tested a simple idea: divide a city into H3 hexagons, place landmarks near their vertices, and precompute driving durations between landmarks. Then compare a route assembled through those landmarks with three models that predict duration directly. The experiment covers Tel Aviv–Gush Dan, Amsterdam, and the New York City area, with each city trained independently.</p>
+<div class="finding"><p><strong>The result:</strong> at the finest tested resolution, ML achieved mean absolute errors of roughly 73–89 seconds. Even the coarsest grid produced errors around 102–131 seconds with the better-performing models. Finer grids helped, but their landmark tables were about 220–510 times larger. The route-based method was less accurate on average, with a useful additional property: it gives an upper bound under the static routing model.</p></div>
+<p><a href="https://github.com/Elilgo324/duration-approximation">Code, protocol, result tables, and figure generation are on GitHub.</a></p>
+
+<h2 id="representation">A small representation of a large road network</h2>
+<p><a href="https://h3geo.org/docs/">H3</a> assigns geographic coordinates to cells at different resolutions. Higher resolutions mean smaller cells. I used resolutions 6, 7, and 8; their global average hexagon areas are approximately 36.1, 5.16, and 0.737 km². Individual cells vary in size. See the <a href="https://h3geo.org/docs/core-library/restable/">H3 resolution table</a>.</p>
+<p>For each cell, its six vertices suggest six representative places. A geometric vertex might fall in a building or a canal, so it must be snapped onto the road network. In this experiment, a landmark is the nearest eligible road position with one fixed legal driving direction. It can sit partway along a road segment; it is not necessarily an intersection. Shared vertices and identical snapped directed positions are deduplicated.</p>
+<p>Direction matters. A road position approached from the north is not always interchangeable with the same position approached from the south. Treating them as identical can accidentally join two individually valid route segments into an invalid journey.</p>
+<p>For every ordered pair of landmarks, I store the shortest driving duration. The matrix is directed: driving from A to B can take a different amount of time from driving from B to A. With L unique landmarks, a dense float32 table takes 4L² bytes. This implementation stores the complete matrix, including diagonal and within-cell entries.</p>
+<p>The grid coverage follows road geometry sampled every 100 metres, plus a one-cell ring. It covers the study region before trip sampling is evaluated; it is not built only around the test pickups.</p>
+
+<h2 id="dp">An approximation you can drive</h2>
+<p>Suppose pickup p and drop-off q belong to different cells. Let ℓᵢ be one of the pickup cell’s landmarks and ℓⱼ one of the drop-off cell’s landmarks. A candidate journey has three legs:</p>
+<ol><li>Drive from the pickup to ℓᵢ.</li><li>Use the stored duration from ℓᵢ to ℓⱼ.</li><li>Drive from ℓⱼ to the drop-off.</li></ol>
+<figure class="graph-figure"><a href="figures/landmark-route.svg" aria-label="Open figure at full size"><img src="figures/landmark-route.svg" width="700" height="380" alt="A pickup and a drop-off in separate hexagons, connected through one landmark in each cell. The middle duration is precomputed." /></a><figcaption>Conceptual diagram. Dots represent landmark choices; actual landmarks are snapped to directed road positions. Arrows illustrate the three legs, not measured road geometry.</figcaption></figure>
+<p>Choose the cheapest combination out of the six-by-six landmark choices:</p>
+<div class="equation" role="math" aria-label="Estimated duration equals the minimum over i and j of duration p to landmark i, plus stored duration i to j, plus duration landmark j to q">T̂(p, q) = min<sub>i,j</sub> [d(p, ℓᵢ) + M<sub>ij</sub> + d(ℓⱼ, q)]</div>
+<p>This is a small dynamic program over three layers. We can minimize over the destination landmarks for each origin landmark, then take the minimum over origins. With only 36 combinations, a direct array minimum is sufficient. There is no need to run another general shortest-path algorithm over these layers.</p>
+<p>The middle leg is a lookup. The first and last legs still require exact routing at query time. Here they use two local OSRM table requests; those searches are not restricted to the endpoint cells. DP therefore retains an online routing dependency.</p>
+<h3>Why pessimism can be valuable</h3>
+<p>Every feasible combination describes a legal journey. The shortest possible journey cannot be longer than one of those journeys. Therefore, with compatible directed landmark states and the same routing costs, <strong>T̂(p, q) ≥ d(p, q)</strong>. Taking the best landmark combination preserves the upper bound.</p>
+<p>This is a useful kind of pessimism. If underestimating duration is much worse than overestimating it—for example, when a planner must protect a hard pickup deadline—a conservative estimate can be preferable to one with lower average error.</p>
+<p>The guarantee is about the routing model. It does not guarantee arrival on time in the real world: traffic, uncertain speeds, and service delays are outside this experiment. Floating-point storage and OSRM’s rounded durations also require a small numerical tolerance when checking the bound.</p>
+
+<h2 id="models">Let the model estimate the missing detail</h2>
+<p>The ML alternative uses the landmark table as information about the road network, then predicts the entire trip duration directly. It does not calculate the exact pickup-to-landmark or landmark-to-drop-off durations.</p>
+<p>Each example has 63 base features:</p>
+<ul><li><strong>36 driving durations:</strong> every directed combination from the pickup cell’s six landmarks to the drop-off cell’s six landmarks.</li><li><strong>24 local offsets:</strong> east and north displacement between each endpoint and each of its six snapped landmarks.</li><li><strong>3 trip geometry features:</strong> pickup-to-drop-off east displacement, north displacement, and straight-line distance.</li></ul>
+<p>The duration block describes how the network connects the two areas. The offsets describe where the actual endpoints sit relative to those representative locations. The models receive neither absolute coordinates nor exact endpoint-leg durations.</p>
+<p>I kept the model comparison deliberately small:</p>
+<ul><li><strong>Ridge regression:</strong> a regularized linear baseline. It asks how much we can achieve by combining these features with a weighted sum.</li><li><strong>Gradient-boosted trees:</strong> histogram gradient boosting, which can learn nonlinear thresholds and feature interactions.</li><li><strong>A small neural network:</strong> an MLP with hidden layers of 128 and 64 units, giving a different way to learn nonlinear relationships.</li></ul>
+<p>There are two predefined hyperparameter candidates per model family, selected by validation MAE. MLP epoch selection also uses validation data. Missing durations are imputed, with missingness flags; preprocessing and target scaling are fitted only on training data. Predictions are clipped at zero. Each city and resolution gets its own fitted models.</p>
+<p>This is a comparison of three practical model families, not an exhaustive search for the best possible predictor. The exact settings are in the <a href="https://github.com/Elilgo324/duration-approximation/blob/main/duration_approximation/protocol.json">frozen protocol</a>.</p>
+
+<h2 id="evaluation">What exactly did we test?</h2>
+<p>Ground truth is shortest driving duration on OpenStreetMap roads using a pinned OSRM 5.27.1 car profile configured to minimize duration. Traffic is ignored. These are router labels, not durations measured from actual vehicle trips. The map requests use the historical timestamp September 17, 2026.</p>
+<p>Each study region is an explicit rectangle with a 0.12-degree routing buffer. The NYC rectangle includes nearby urban roads outside the city boundary. The buffer allows routes to leave the endpoint region, although sufficiently long detours can still be cut off.</p>
+<p>For each city, I sample 3,000 endpoint locations approximately in proportion to eligible road-segment length. A position is drawn within the middle 90% of a selected segment and snapped within 100 metres. This gives broad road coverage; it does not reproduce the spatial distribution of ride requests.</p>
+<p>The endpoints are split into three disjoint pools: 2,250 for training, 375 for validation, and 375 for testing. Unique directed pairs are sampled within each pool. A→B and B→A are different examples. No endpoint is shared across the three splits, although an endpoint can occur in multiple pairs within its own split.</p>
+<p>A pair is accepted only if its endpoints belong to different cells at <strong>all three tested resolutions</strong>. This keeps the same pairs across resolutions and methods. It also means this experiment excludes many short trips and says nothing about same-cell accuracy. A practical same-cell routing fallback is possible, but it is not evaluated here.</p>
+<p>The requested split sizes are 12,000 training pairs, 2,000 validation pairs, and 2,000 test pairs. After excluding unreachable or zero-duration labels, the test sets contain 1,962 trips in Tel Aviv, 1,962 in Amsterdam, and 1,983 in NYC. Every method returns a finite estimate for every retained test pair.</p>
+<p>The main metric is <strong>mean absolute error (MAE)</strong>, in seconds. I also record the 95th percentile of absolute error and signed bias, defined as prediction minus ground truth. The experiment uses one fixed seed and split. Small differences between models should not be read as statistically established wins.</p>
+
+<h2 id="results">Smaller cells help. Large cells still carry information.</h2>
+<p>In all three cities, increasing the H3 resolution improves every method’s MAE. The ML models consistently have lower average error than the landmark DP route.</p>
+<div class="accuracy-grid">
+<figure class="graph-figure"><a href="figures/accuracy-tel_aviv.svg" aria-label="Open figure at full size"><img src="figures/accuracy-tel_aviv.svg" width="700" height="440" alt="Tel Aviv MAE falls as resolution increases. At resolution 8, ridge, boosted trees, MLP, and DP have errors of 94.5, 89.1, 88.6, and 172.1 seconds." loading="lazy" /></a></figure>
+<figure class="graph-figure"><a href="figures/accuracy-amsterdam.svg" aria-label="Open figure at full size"><img src="figures/accuracy-amsterdam.svg" width="700" height="440" alt="Amsterdam MAE falls as resolution increases. At resolution 8, ridge, boosted trees, MLP, and DP have errors of 82.4, 77.4, 76.2, and 170.1 seconds." loading="lazy" /></a></figure>
+<figure class="graph-figure"><a href="figures/accuracy-nyc.svg" aria-label="Open figure at full size"><img src="figures/accuracy-nyc.svg" width="700" height="440" alt="NYC MAE falls as resolution increases. At resolution 8, ridge, boosted trees, MLP, and DP have errors of 78.4, 73.4, 74.3, and 154.1 seconds." loading="lazy" /></a><figcaption>Held-out MAE, using identical test pairs at each resolution. All three charts use the same vertical scale. Lower is better. Tap a figure to open it at full size.</figcaption></figure>
+</div>
+<p>The coarsest grid is already useful on this benchmark: boosted trees achieve about 106 seconds MAE in Tel Aviv, 105 in Amsterdam, and 131 in NYC. Those estimates use duration matrices of only about 45 KB, 48 KB, and 250 KB, respectively. Model checkpoints and other runtime data add to that storage.</p>
+<p>At resolution 8, boosted trees and the MLP are close. The MLP has slightly lower MAE in Tel Aviv and Amsterdam; boosted trees have slightly lower MAE in NYC. There is no compelling universal winner between them in this single run. Ridge is also surprisingly competitive at the finer resolution, suggesting that this representation makes a simple model worth keeping as a baseline.</p>
+<p>Average error does not describe the whole experience. Here are the resolution-8 boosted-tree results alongside DP:</p>
+<div class="table-scroll" role="region" aria-label="Resolution 8 errors in seconds" tabindex="0"><table><thead><tr><th>City</th><th>Method</th><th>MAE</th><th>95th percentile</th><th>Bias</th></tr></thead><tbody>
+<tr><td>Tel Aviv</td><td>Boosted trees</td><td>89.1</td><td>264.4</td><td>-7.0</td></tr>
+<tr><td>Tel Aviv</td><td>DP</td><td>172.1</td><td>467.2</td><td>+172.1</td></tr>
+<tr><td>Amsterdam</td><td>Boosted trees</td><td>77.4</td><td>201.8</td><td>-8.4</td></tr>
+<tr><td>Amsterdam</td><td>DP</td><td>170.1</td><td>411.2</td><td>+170.1</td></tr>
+<tr><td>NYC</td><td>Boosted trees</td><td>73.4</td><td>209.6</td><td>-4.7</td></tr>
+<tr><td>NYC</td><td>DP</td><td>154.1</td><td>330.1</td><td>+154.1</td></tr>
+</tbody></table></div>
+<p>For boosted trees, the 95th-percentile absolute error is roughly 3.4–4.4 minutes. A near-zero mean bias would not imply that underestimation is rare; positive and negative errors can cancel. DP’s positive bias, by contrast, is almost identical to its MAE because its error is one-sided, apart from numerical rounding. Its conservatism comes with a substantial accuracy cost.</p>
+
+<h2 id="tradeoff">What does the extra accuracy cost?</h2>
+<p>A finer grid creates more landmarks, and the all-pairs table grows quadratically in their number. The numbers below are the actual matrix payload, in decimal MB; they exclude the road graph, landmark metadata, and trained models.</p>
+<div class="table-scroll" role="region" aria-label="Landmark counts and matrix sizes" tabindex="0"><table><thead><tr><th>City</th><th>H3</th><th>Landmarks</th><th>Matrix MB</th><th>Matrix time</th></tr></thead><tbody>
+<tr><td>Tel Aviv</td><td>6</td><td>106</td><td>0.045</td><td>0.07 s</td></tr>
+<tr><td>Tel Aviv</td><td>7</td><td>346</td><td>0.479</td><td>0.51 s</td></tr>
+<tr><td>Tel Aviv</td><td>8</td><td>1,605</td><td>10.304</td><td>9.78 s</td></tr>
+<tr><td>Amsterdam</td><td>6</td><td>110</td><td>0.048</td><td>0.06 s</td></tr>
+<tr><td>Amsterdam</td><td>7</td><td>358</td><td>0.513</td><td>0.49 s</td></tr>
+<tr><td>Amsterdam</td><td>8</td><td>1,637</td><td>10.719</td><td>9.34 s</td></tr>
+<tr><td>NYC</td><td>6</td><td>250</td><td>0.250</td><td>0.59 s</td></tr>
+<tr><td>NYC</td><td>7</td><td>1,054</td><td>4.444</td><td>10.00 s</td></tr>
+<tr><td>NYC</td><td>8</td><td>5,646</td><td>127.509</td><td>268.90 s</td></tr>
+</tbody></table></div>
+<p>In NYC, moving from resolution 6 to 8 increases the matrix from 0.25 MB to 127.5 MB—about 510 times larger. Boosted-tree MAE falls from 131.5 to 73.4 seconds, a reduction of about 44%. Tel Aviv and Amsterdam show the same direction of tradeoff, with smaller accuracy gains and smaller absolute tables.</p>
+<figure class="graph-figure"><a href="figures/accuracy-storage.svg" aria-label="Open figure at full size"><img src="figures/accuracy-storage.svg" width="700" height="460" alt="Boosted-tree error versus matrix storage on a logarithmic horizontal axis. Each city's finer resolutions reduce error while requiring substantially more storage." loading="lazy" /></a><figcaption>Each line follows one city from resolution 6 to 8. A logarithmic storage axis makes the small and large tables visible together. These are within-city tradeoffs, not a ranking of city difficulty.</figcaption></figure>
+<p>Resolution 7 is a plausible compromise if a few megabytes of table storage are acceptable. But there is no single best grid size without an error budget and a storage budget. In Amsterdam, for example, resolution 6 to 7 improves boosted-tree MAE by only about three seconds; resolution 8 produces the larger improvement.</p>
+<p>The full run used one CPU and 2 GiB of RAM, without a GPU. Mean individual-query times were roughly 0.7–0.9 ms for ridge and the MLP, 2.5–2.6 ms for boosted trees, and 4.0–6.9 ms for DP. ML timings include feature construction and inference; DP timings include its two local HTTP table calls. Common endpoint snapping is excluded. These are measurements of this implementation, not a claim about pure algorithm speed or a speedup over an optimized batched router.</p>
+
+<h2 id="lessons">What I take from this experiment</h2>
+<p>The useful finding is that a fairly coarse landmark representation can support reasonable duration estimates on unseen endpoints within a city. Refining that representation improves accuracy, but the storage curve grows much faster than the error shrinks.</p>
+<p>The choice between DP and ML also depends on the kind of error that matters. If the objective is low average error and avoiding online endpoint routing, the learned models are attractive. If an underestimate is unacceptable under the static model, the DP construction offers a property these regressors do not have. Optimizing MAE alone cannot give that guarantee.</p>
+<p>There are clear limits to the evidence: one split, three independently trained cities, synthetic road-length sampling, cross-cell trips only, and static router labels. The experiment does not establish performance on real demand, traffic, unseen cities, or same-cell trips. It also has no geometry-only ablation, so it does not isolate how much improvement comes specifically from the landmark durations.</p>
+<p>The next questions I would investigate follow directly from those limits: evaluate on a realistic trip distribution that includes short journeys; measure the incremental value of landmark durations against the same models using only geometry; and examine an asymmetric loss or quantile estimate when underprediction costs more than overprediction. A learned conservative estimate would still need calibration and would not inherit DP’s mathematical bound automatically.</p>
+
+<h2 id="reproduce">Reproduce the figures or the experiment</h2>
+<p>The <a href="https://github.com/Elilgo324/duration-approximation">standalone repository</a> contains the frozen protocol, core experiment code, Docker runner, tests, all 36 result summaries, and this article’s figure generator. The published core modules are byte-identical to those used in the completed full run; a manifest records their hashes. No private service or credentials are needed to run the experiment.</p>
+<p>The full run passed the DP bound check on every retained test prediction and 450 additional checks comparing selected three-leg journeys with joined waypoint routes. The standalone test suite has 15 tests. These checks are particularly important for direction handling: a fast estimate is not useful if its claimed bound comes from incompatible route legs.</p>
+<p>The small result summaries are included in Git. Full per-trip datasets, model files, maps, and landmark matrices are produced by the runner and are not bundled with this article. Reproducing the exact labels requires identical map bytes, not just the same timestamp; the runner records map identities and supports reuse of frozen extracts.</p>
+<p class="source-note">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, available under ODbL. Routing uses <a href="https://github.com/Project-OSRM/osrm-backend/tree/v5.27.1">OSRM 5.27.1</a>; models use <a href="https://scikit-learn.org/1.5/">scikit-learn 1.5.2</a>. Protocol: duration_approximation_v6; seed: 20260918.</p>
+
+<div class="article-end"><a class="read-link" href="https://orifogler.com/blog/">← Back to the technical blog</a></div>
+</div></div></article></main>
+<footer class="site-footer shell"><span>© 2026 Ori Fogler</span><div><a href="https://orifogler.com/hagigey/" lang="he">הגיגי אמרי</a><a href="https://orifogler.com/privacy.html">Privacy</a><a href="mailto:me@orifogler.com">Get in touch</a></div></footer>
+</body></html>

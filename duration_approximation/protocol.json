@@ -1,0 +1,23 @@
+{
+  "experiment_id": "duration_approximation_v6",
+  "map_timestamp": "2026-09-17T00:00:00Z",
+  "resolutions": [6, 7, 8],
+  "seed": 20260918,
+  "train_pairs": 12000,
+  "validation_pairs": 2000,
+  "test_pairs": 2000,
+  "endpoint_pool": 3000,
+  "table_block_size": 64,
+  "max_endpoint_snap_m": 100,
+  "routing_buffer_deg": 0.12,
+  "cities": [
+    {"name": "tel_aviv", "label": "Tel Aviv–Gush Dan", "bbox": [34.72, 31.95, 34.95, 32.22]},
+    {"name": "amsterdam", "label": "Amsterdam", "bbox": [4.72, 52.28, 5.05, 52.44]},
+    {"name": "nyc", "label": "New York City study rectangle", "bbox": [-74.26, 40.49, -73.70, 40.92]}
+  ],
+  "models": {
+    "ridge": {"alpha": [1.0, 100.0]},
+    "boosted_trees": {"max_leaf_nodes": [15, 31], "max_iter": 250, "learning_rate": 0.05, "l2_regularization": 1.0},
+    "mlp": {"hidden_layer_sizes": [128, 64], "alpha": [0.0001, 0.01], "learning_rate_init": 0.001, "max_epochs": 150, "patience": 15}
+  }
+}
