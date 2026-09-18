@@ -1,0 +1,52 @@
+{
+  "purpose": "Cartographic context only; not a new experiment",
+  "projection": "Local equirectangular; x uses cosine of each city center latitude",
+  "window_width_km": 12,
+  "north_up": true,
+  "service_roads_displayed": false,
+  "road_colors": {
+    "major": "#146b8a",
+    "other": "#65717b"
+  },
+  "cities": {
+    "tel_aviv": {
+      "center_lon_lat": [
+        34.81,
+        32.08
+      ],
+      "study_bbox_wsen": [
+        34.72,
+        31.95,
+        34.95,
+        32.22
+      ],
+      "data_sha256": "5ac25d5da2cad7cea134cef6aa156489acc98d2e293d79fcbd8976081360a7f0"
+    },
+    "amsterdam": {
+      "center_lon_lat": [
+        4.9,
+        52.365
+      ],
+      "study_bbox_wsen": [
+        4.72,
+        52.28,
+        5.05,
+        52.44
+      ],
+      "data_sha256": "c27c82634d7f8981698c4a50954f893824433ef3d9abd1159c6246f71b887676"
+    },
+    "nyc": {
+      "center_lon_lat": [
+        -73.975,
+        40.75
+      ],
+      "study_bbox_wsen": [
+        -74.26,
+        40.49,
+        -73.7,
+        40.92
+      ],
+      "data_sha256": "0d3723515f6da137d98213a474269fc78d91dc0a78c758c0dbb6aafb61b996c9"
+    }
+  }
+}

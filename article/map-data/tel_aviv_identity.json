@@ -1,0 +1,27 @@
+{
+  "city": "tel_aviv",
+  "purpose": "Road-pattern illustration; not the frozen experimental routing extract",
+  "requested_timestamp": "2026-09-17T00:00:00Z",
+  "endpoint": "https://overpass-api.de/api/interpreter",
+  "query": "[out:json][timeout:180][date:\"2026-09-17T00:00:00Z\"];way[\"highway\"~\"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service)$\"](31.95,34.72,32.22,34.95);out geom;",
+  "bbox_wsen": [
+    34.72,
+    31.95,
+    34.95,
+    32.22
+  ],
+  "response_sha256": "e7c3936b5e7565a3b27a484383f65ef9fd35a5ab59ced84fe7c434647e40142c",
+  "response_bytes": 35256146,
+  "ways": 47703,
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-18T14:46:01Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "attribution": "\u00a9 OpenStreetMap contributors, ODbL 1.0",
+  "source": "https://www.openstreetmap.org/copyright",
+  "download_seconds": 15.5,
+  "geometry_sha256": "5ac25d5da2cad7cea134cef6aa156489acc98d2e293d79fcbd8976081360a7f0",
+  "display_ways": 32187,
+  "geometry_bytes": 10089635,
+  "transformation": "Retain way ID, highway class and geometry; omit service roads and other tags; serialize compact JSON. No coordinate simplification."
+}

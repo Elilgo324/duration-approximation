@@ -1,0 +1,27 @@
+{
+  "city": "nyc",
+  "purpose": "Road-pattern illustration; not the frozen experimental routing extract",
+  "requested_timestamp": "2026-09-17T00:00:00Z",
+  "endpoint": "https://overpass-api.de/api/interpreter",
+  "query": "[out:json][timeout:180][date:\"2026-09-17T00:00:00Z\"];way[\"highway\"~\"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service)$\"](40.49,-74.26,40.92,-73.7);out geom;",
+  "bbox_wsen": [
+    -74.26,
+    40.49,
+    -73.7,
+    40.92
+  ],
+  "response_sha256": "ff48edc2360772c3fe1adfbe622fbf5b4e2e8edb3f738405867ef33a6b95ee1c",
+  "response_bytes": 173882936,
+  "ways": 221714,
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-18T14:47:01Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "attribution": "\u00a9 OpenStreetMap contributors, ODbL 1.0",
+  "source": "https://www.openstreetmap.org/copyright",
+  "download_seconds": 47.78,
+  "geometry_sha256": "0d3723515f6da137d98213a474269fc78d91dc0a78c758c0dbb6aafb61b996c9",
+  "display_ways": 112482,
+  "geometry_bytes": 37686248,
+  "transformation": "Retain way ID, highway class and geometry; omit service roads and other tags; serialize compact JSON. No coordinate simplification."
+}

@@ -40,6 +40,7 @@ python3.12 -m venv .venv
 pip install -r requirements-figures.txt
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests
 python -m duration_approximation.figures --results results --output article/figures
+python -m duration_approximation.road_figures
 ```
 
 ## Frozen protocol
@@ -60,7 +61,7 @@ The router expands ambiguous endpoints into explicit legal directions and minimi
 
 ## Results and artifacts
 
-The `results/` directory contains the small, machine-readable result records used for the article. Figures are generated from those records, not manually entered chart values. Generated experiment output contains endpoints, pair IDs, split IDs, ground-truth labels, features, predictions, models, all landmark matrices, routing profiles, map identities, timing records and the report. Raw matrices and maps are excluded from Git history.
+The `results/` directory contains the small, machine-readable result records used for the article. Figures are generated from those records, not manually entered chart values. Generated experiment output contains endpoints, pair IDs, split IDs, ground-truth labels, features, predictions, models, all landmark matrices, routing profiles, map identities, timing records and the report. Raw experimental matrices and routing maps are excluded from Git history. Separate, compressed OSM road geometry used only for the article’s illustrations is bundled in [`article/map-data/`](article/map-data/), with source queries, checksums and ODbL attribution. These cartographic extracts are not the frozen routing inputs.
 
 Exact reruns require identical map bytes: a historical timestamp alone is not a guarantee of byte-identical responses from different Overpass providers. To reuse an existing run's map extracts, mount that run read-only and set `EXPERIMENT_REFERENCE_DIR` to its root. The runner validates the query and decompressed map checksums before use:
 

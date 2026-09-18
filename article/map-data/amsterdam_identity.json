@@ -1,0 +1,27 @@
+{
+  "city": "amsterdam",
+  "purpose": "Road-pattern illustration; not the frozen experimental routing extract",
+  "requested_timestamp": "2026-09-17T00:00:00Z",
+  "endpoint": "https://overpass-api.de/api/interpreter",
+  "query": "[out:json][timeout:180][date:\"2026-09-17T00:00:00Z\"];way[\"highway\"~\"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service)$\"](52.28,4.72,52.44,5.05);out geom;",
+  "bbox_wsen": [
+    4.72,
+    52.28,
+    5.05,
+    52.44
+  ],
+  "response_sha256": "adfc1e30b0ee321ffdf33acfced480ba3a44f3741385999709b8e851192dbb1c",
+  "response_bytes": 38818458,
+  "ways": 53805,
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-18T14:46:01Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "attribution": "\u00a9 OpenStreetMap contributors, ODbL 1.0",
+  "source": "https://www.openstreetmap.org/copyright",
+  "download_seconds": 22.84,
+  "geometry_sha256": "c27c82634d7f8981698c4a50954f893824433ef3d9abd1159c6246f71b887676",
+  "display_ways": 34606,
+  "geometry_bytes": 9019972,
+  "transformation": "Retain way ID, highway class and geometry; omit service roads and other tags; serialize compact JSON. No coordinate simplification."
+}
