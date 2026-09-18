@@ -45,7 +45,7 @@ def main():
         ys = [next(m['mae_seconds'] for m in a['metrics'] if m['method'] == 'boosted_trees') for a in group]
         ax.plot(xs, ys, marker=marker, color=color, linewidth=2, label=label)
         for x, y, a in zip(xs, ys, group):
-            ax.annotate(f"r{a['resolution']}", (x, y), xytext=(5, 6), textcoords='offset points', fontsize=10)
+            ax.annotate(f"r{a['resolution']}", (x, y), xytext=(5, -14 if city == 'amsterdam' else 8), textcoords='offset points', fontsize=10)
     ax.set(xscale='log', xlabel='Directed landmark matrix (MB, logarithmic scale)',
            ylabel='Boosted-tree MAE (seconds)', ylim=(60, 145), title='More precomputation buys lower error')
     ax.grid(color='#eeeeee'); ax.legend(frameon=False, loc='upper right', fontsize=11.5)
